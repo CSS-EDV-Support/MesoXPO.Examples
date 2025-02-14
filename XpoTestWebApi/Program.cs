@@ -1,9 +1,6 @@
-using DevExpress.Xpo;
-using DevExpress.Xpo.DB;
 using MesoXPO;
-using MesoXPO.Helper.Extensions;
 
-var builder = WebApplication.CreateBuilder(args);
+uilder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
@@ -13,7 +10,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 #region XPO Datenzugriff
 
-var connectionString  = builder.Configuration.GetConnectionString("WinLineConnectionString");
+var connectionString = builder.Configuration.GetConnectionString("WinLineConnectionString");
 
 // Datalayer als Scoped
 builder.Services.AddXpoDefaultDataLayer(ServiceLifetime.Scoped,

@@ -15,6 +15,6 @@ MesoXPO Datenobjekte eines Mandanten durchsuchen
 
 ## Test XPO WebApi
 
-Einfache NET 7 WebApi mit einem exemplarischen CompanyController, der Daten aus der ViewKontenstamm liefert
+Einfache NET 8 WebApi mit einem exemplarischen CompanyController, der Daten aus der ViewKontenstamm liefert
 
 Die appsettings.json muss angepasst werden

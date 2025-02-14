@@ -34,14 +34,16 @@ public partial class FormMain : Form
         InitializeComponent();
     }
 
-    private MesoDataUnitOfWork CompanyConnection { get; set; }
+    MesoDataUnitOfWork CompanyConnection { get; set; }
 
-    private SystemUnitOfWork SystemConnection { get; set; }
+    SystemUnitOfWork SystemConnection { get; set; }
 
-    private void comboCompanies_SelectedIndexChanged(object sender, EventArgs e)
+    void comboCompanies_SelectedIndexChanged(object sender, EventArgs e)
     {
         if (string.IsNullOrEmpty(comboCompanies.SelectedItem.ToString()))
+        {
             return;
+        }
 
         // Mandantenverbindung
         CompanyConnection = SystemConnection.GetDataUnitOfWorkForCompany(comboCompanies.SelectedItem.ToString());
@@ -55,16 +57,22 @@ public partial class FormMain : Form
         gridDataObjects.DataSource = bindingSourceCompanyObjects;
     }
 
-    private void gridDataObjects_CellContentClick(object sender, DataGridViewCellEventArgs e)
+    void gridDataObjects_CellContentClick(object sender, DataGridViewCellEventArgs e)
     {
         var senderGrid = (DataGridView)sender;
 
         if (senderGrid.Columns[e.ColumnIndex] is not DataGridViewButtonColumn ||
-            e.RowIndex < 0) return;
+            e.RowIndex < 0)
+        {
+            return;
+        }
 
         try
         {
-            if (bindingSourceCompanyObjects.Current is not CompanyObjectInfo currentCompanyObject) return;
+            if (bindingSourceCompanyObjects.Current is not CompanyObjectInfo currentCompanyObject)
+            {
+                return;
+            }
 
             var asmMesoXPO = Assembly.GetAssembly(typeof(Mandantenstamm));
             var className = currentCompanyObject.Name;
@@ -86,10 +94,13 @@ public partial class FormMain : Form
     }
 
 
-    private void AddTabWithData(string formCaption, object data)
+    void AddTabWithData(string formCaption, object data)
     {
         if (data == null)
+        {
             return;
+        }
+
         try
         {
             var newTab = new TabPage(formCaption);
@@ -109,10 +120,13 @@ public partial class FormMain : Form
         }
     }
 
-    private void ShowGridFormWithData(string formCaption, object data)
+    void ShowGridFormWithData(string formCaption, object data)
     {
         if (data == null)
+        {
             return;
+        }
+
         try
         {
             using var xtraForm = new Form();
@@ -131,13 +145,16 @@ public partial class FormMain : Form
         }
     }
 
-    private void buttonConnectionSettings_Click(object sender, EventArgs e)
+    void buttonConnectionSettings_Click(object sender, EventArgs e)
     {
         try
         {
             using var sqlConnectionDialog = new SqlConnectionDialog();
             var result = sqlConnectionDialog.ShowDialog(this);
-            if (result != DialogResult.OK) return;
+            if (result != DialogResult.OK)
+            {
+                return;
+            }
 
             // Systemverbindung
             SystemConnection = new SystemUnitOfWork(sqlConnectionDialog.ConnectionString);

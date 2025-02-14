@@ -6,7 +6,7 @@ namespace WinFormsXpoNet;
 
 public partial class SqlConnectionDialog : Form
 {
-    private readonly string IsValidPropertyName = "IsValid";
+    readonly string IsValidPropertyName = "IsValid";
 
     public SqlConnectionDialog()
     {
@@ -36,7 +36,10 @@ public partial class SqlConnectionDialog : Form
     }
 
 
-    public bool IsValid => ValidateParameters();
+    public bool IsValid
+    {
+        get => ValidateParameters();
+    }
 
 
     public string ConnectionString { get; private set; }
@@ -44,7 +47,7 @@ public partial class SqlConnectionDialog : Form
     public event PropertyChangedEventHandler PropertyChanged;
 
 
-    private void SetupControls()
+    void SetupControls()
     {
         ServerNameTextBox.Focus();
         MesoPasswordTextBox.TextChanged += (sender, args) => { NotifyIsValid(); };
@@ -54,20 +57,20 @@ public partial class SqlConnectionDialog : Form
     }
 
 
-    private void Ok()
+    void Ok()
     {
         ConnectionString = BuildConnectionString();
         DialogResult = DialogResult.OK;
         Close();
     }
 
-    private void Cancel()
+    void Cancel()
     {
         DialogResult = DialogResult.Cancel;
         Close();
     }
 
-    private void Test()
+    void Test()
     {
         var success = TestConnection(BuildConnectionString());
 
@@ -75,7 +78,7 @@ public partial class SqlConnectionDialog : Form
         ButtonOk.Enabled = success;
     }
 
-    private string BuildConnectionString()
+    string BuildConnectionString()
     {
         var builder = new SqlConnectionStringBuilder
         {
@@ -89,13 +92,13 @@ public partial class SqlConnectionDialog : Form
         return builder.ConnectionString;
     }
 
-    private void NotifyIsValid()
+    void NotifyIsValid()
     {
         OnPropertyChanged(IsValidPropertyName);
         ButtonTest.Enabled = IsValid;
     }
 
-    private bool ValidateParameters()
+    bool ValidateParameters()
     {
         return !string.IsNullOrEmpty(DatabaseName)
                && !string.IsNullOrEmpty(ServerName)

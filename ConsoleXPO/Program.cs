@@ -9,9 +9,9 @@ using System.Linq;
 
 namespace ConsoleXPO
 {
-    internal class Program
+    class Program
     {
-        private static void Main(string[] args)
+        static void Main(string[] args)
         {
             var sqlServer = GetParamFromConsole("SQL Server");
             var systemDb = GetParamFromConsole("Name der Systemdatenbank");
@@ -39,9 +39,11 @@ namespace ConsoleXPO
                 && a.Lagerwerte.Lagerbestand > 0);
 
             foreach (var artikel in artikelMitLagerstand)
+            {
                 Console.WriteLine(
                     $"Artikel {artikel.Bezeichnung} der Artikelgruppe {artikel.Preisstamm?.ArtikelgruppenStamm?.Gruppentext} hat einen Bestand von {artikel.Lagerwerte.Lagerbestand}" +
                     $" {artikel.Preisstamm.ColliVerkauf}, Verfügbarer Bestand {artikel.Lagerwerte.VerfuegbarerBestand()}");
+            }
 
             var workflowsMitKunden = new XPQuery<CrmIncidencesUndSchritte>(companyConnection).Where(c =>
                 c.Kunde.Adresse.Staat == "D" && c.Id > 0 && c.FlagFuerLetztenEintrag == 1);
@@ -51,10 +53,15 @@ namespace ConsoleXPO
                 Console.WriteLine(
                     $"Kunde {workflow.Kunde.Kontoname}, Fall {workflow.Id} - {workflow.Kurzbeschreibung}. {workflow.Uploads.Count()} Anhänge");
 
-                if (!workflow.Uploads.Any()) continue;
+                if (!workflow.Uploads.Any())
+                {
+                    continue;
+                }
 
                 foreach (var upload in workflow.Uploads)
+                {
                     Console.WriteLine($"     Anhang: {upload.Dateiname} ({upload.UploadId})");
+                }
             }
 
             var aktuelleAuftrage = new XPQuery<BestelldateiKopf>(companyConnection).Where(a =>
@@ -64,10 +71,14 @@ namespace ConsoleXPO
             Console.ReadLine();
         }
 
-        private static string GetSelectionFromConsole(List<string> optionen, string optionsName)
+        static string GetSelectionFromConsole(List<string> optionen, string optionsName)
         {
             Console.WriteLine($"Mögliche Werte für {optionsName}:");
-            for (var i = 1; i <= optionen.Count; i++) Console.WriteLine($"{i} - {optionen[i - 1]}");
+            for (var i = 1; i <= optionen.Count; i++)
+            {
+                Console.WriteLine($"{i} - {optionen[i - 1]}");
+            }
+
             Console.WriteLine($"Bitte gewünschten Wert für {optionsName} auswählen:");
             var input = string.Empty;
             var validNumber = int.TryParse(input, out var selection);
@@ -78,13 +89,15 @@ namespace ConsoleXPO
                 input = Console.ReadLine();
                 validNumber = int.TryParse(input, out selection);
                 if (optionen.Count <= selection)
+                {
                     break;
+                }
             }
 
             return optionen[selection - 1];
         }
 
-        private static string GetParamFromConsole(string paramName, bool passwordMask = false)
+        static string GetParamFromConsole(string paramName, bool passwordMask = false)
         {
             var input = string.Empty;
             while (string.IsNullOrWhiteSpace(input))
@@ -108,6 +121,7 @@ namespace ConsoleXPO
             var chr = (char)0;
 
             while ((chr = Console.ReadKey(true).KeyChar) != ENTER)
+            {
                 if (chr == BACKSP)
                 {
                     if (pass.Count > 0)
@@ -132,6 +146,7 @@ namespace ConsoleXPO
                     pass.Push(chr);
                     Console.Write(mask);
                 }
+            }
 
             Console.WriteLine();
 
