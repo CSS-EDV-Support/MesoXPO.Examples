@@ -1,5 +1,5 @@
+using Microsoft.Data.SqlClient;
 using System.ComponentModel;
-using System.Data.SqlClient;
 using System.Runtime.CompilerServices;
 
 namespace WinFormsXpoNet;
@@ -89,7 +89,7 @@ public partial class SqlConnectionDialog : Form
         };
 
 
-        return builder.ConnectionString;
+        return builder.ConnectionString + ";TrustServerCertificate=true";
     }
 
     void NotifyIsValid()
