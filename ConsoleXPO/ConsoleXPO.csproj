@@ -55,7 +55,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MesoXPO-DevEx24.2">
-      <Version>2025.4.38</Version>
+      <Version>2025.4.48</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Data.SqlClient">
       <Version>6.0.1</Version>
