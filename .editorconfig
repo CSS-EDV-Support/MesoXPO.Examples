@@ -263,6 +263,3 @@ dotnet_naming_rule.type_parameter_naming.style = type_parameter_style
 dotnet_naming_rule.type_parameter_naming.severity = warning
 dotnet_naming_symbols.type_parameter_symbol.applicable_kinds = type_parameter
 dotnet_naming_symbols.type_parameter_symbol.applicable_accessibilities = *
-
-# CS1591: Fehledes XML-Kommentar für öffentlich sichtbaren Typ oder Element
-dotnet_diagnostic.CS1591.severity = silent
