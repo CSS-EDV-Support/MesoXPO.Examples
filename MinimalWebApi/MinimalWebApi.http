@@ -1,0 +1,21 @@
+@MinimalWebApi_HostAddress = http://localhost:5180
+
+GET {{MinimalWebApi_HostAddress}}/artikel/500M
+Accept: application/json
+
+###
+
+GET {{MinimalWebApi_HostAddress}}/kunden/500M
+Accept: application/json
+
+###
+
+GET {{MinimalWebApi_HostAddress}}/artikel/500M/100001
+Accept: application/json
+
+###
+
+GET {{MinimalWebApi_HostAddress}}/kunden/500M/70001
+Accept: application/json
+
+###

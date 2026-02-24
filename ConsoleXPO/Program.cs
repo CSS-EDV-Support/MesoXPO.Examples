@@ -1,156 +1,162 @@
+// ConsoleXPO - Interaktives Konsolenbeispiel fuer MesoXPO
+// Zeigt den manuellen Verbindungsaufbau ohne Dependency Injection.
+// Fuer DI-basierte Beispiele siehe das MinimalWebApi-Projekt.
+
 using DevExpress.Xpo;
 using MesoXPO;
 using MesoXPO.Models;
 using MesoXPO.Models.Enums;
 using MesoXPO.Models.SystemData;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using MesoXPO.Services;
 
-namespace ConsoleXPO
+// Verbindungsdaten interaktiv abfragen
+var sqlServer = LeseEingabe("SQL Server");
+var systemDb = LeseEingabe("Name der Systemdatenbank");
+var mesoPasswort = LeseEingabe("Passwort fuer den meso-User", istPasswort: true);
+
+try
 {
-    class Program
+    // SystemUnitOfWork: Zugriff auf die WinLine-Systemdatenbank.
+    // Enthaelt Mandanteninformationen, Benutzer, Datenbankverbindungen etc.
+    using var systemVerbindung = new SystemUnitOfWork(sqlServer, 0, systemDb, "meso", mesoPasswort);
+
+    // Verfuegbare Mandanten aus der Systemdatenbank abfragen
+    var mandanten = new XPQuery<Datenbankverbindung>(systemVerbindung)
+        .Select(d => d.Mandant)
+        .ToList();
+
+    var mandant = WaehleAusListe(mandanten, "Mandantenauswahl");
+
+    // MesoObjectLayer: Erzeugt einen mandantenspezifischen DataLayer.
+    // Alle Abfragen werden automatisch nach Mandant und Wirtschaftsjahr gefiltert.
+    var mesoDal = systemVerbindung.GetMesoObjectLayer(mandant);
+    using var mandantenVerbindung = mesoDal.GetDataUnitOfWork();
+
+    // Optional: Systemdatenbank-Service fuer Zugriff aus XPO-Datenobjekten bereitstellen
+    // (z.B. auf Archivdokumente, Eigenschaften etc., die in der Systemdatenbank liegen).
+    // In DI-Szenarien (ASP.NET Core) wird dies automatisch durch AddMesoXPOServices() erledigt.
+    SystemDatabaseServiceProvider.SetStaticService(new SystemDatabaseService(systemVerbindung));
+
+    // --- Beispiel 1: Artikel mit Lagerbestand abfragen ---
+    Console.WriteLine("\n--- Artikel mit Lagerbestand ---");
+    var artikelMitLagerstand = new XPQuery<ArtikelStammdatei>(mandantenVerbindung)
+        .Where(a =>
+            a.Lagereinstellungen.Artikeltyp == ProductTypeEnum.ProductWithStock
+            && a.Lagerwerte.Lagerbestand > 0);
+
+    foreach (var artikel in artikelMitLagerstand)
     {
-        static void Main(string[] args)
+        Console.WriteLine(
+            $"  Artikel: {artikel.Bezeichnung} " +
+            $"| Gruppe: {artikel.Preisstamm?.ArtikelgruppenStamm?.Gruppentext} " +
+            $"| Bestand: {artikel.Lagerwerte.Lagerbestand} {artikel.Preisstamm?.ColliVerkauf} " +
+            $"| Verfuegbar: {artikel.Lagerwerte.VerfuegbarerBestand()}");
+    }
+
+    // --- Beispiel 2: CRM-Vorgaenge mit Kundeninformationen ---
+    Console.WriteLine("\n--- CRM-Vorgaenge deutscher Kunden ---");
+    var workflowsMitKunden = new XPQuery<CrmIncidencesUndSchritte>(mandantenVerbindung)
+        .Where(c =>
+            c.Kunde.Adresse.Staat == "D"
+            && c.Id > 0
+            && c.FlagFuerLetztenEintrag == 1); // 1 = nur den letzten Schritt jedes Vorgangs anzeigen
+
+    foreach (var workflow in workflowsMitKunden)
+    {
+        Console.WriteLine(
+            $"  Kunde: {workflow.Kunde.Kontoname} | Fall {workflow.Id}: {workflow.Kurzbeschreibung} " +
+            $"| {workflow.Uploads.Count()} Anhaenge");
+
+        foreach (var upload in workflow.Uploads)
         {
-            var sqlServer = GetParamFromConsole("SQL Server");
-            var systemDb = GetParamFromConsole("Name der Systemdatenbank");
-            var mesoPasswort = GetParamFromConsole("Passwort für den meso-User", true);
-
-
-            // Systemverbindung
-            var systemConnection = new SystemUnitOfWork(sqlServer, 0, systemDb, "meso", mesoPasswort);
-
-
-            var mandanten = new XPQuery<Datenbankverbindung>(systemConnection).Select(d => d.Mandant).ToList();
-
-            var mandant = GetSelectionFromConsole(mandanten, "Mandantenauswahl");
-
-
-            // Mandantenverbindung
-            var mesoDal = systemConnection.GetMesoObjectLayer(mandant);
-            var companyConnection = mesoDal.GetDataUnitOfWork();
-
-            // optional: statische Systemverbindung für Zugriff aus den Datenobjekten (z.B. auf Archivdokumente, Eigenschaften etc., die nicht in derselben Datenbank und daher nicht im selben DataLayer liegen)
-            SystemUnitOfWork.SessionSystem = systemConnection;
-
-            var artikelMitLagerstand = new XPQuery<ArtikelStammdatei>(companyConnection).Where(a =>
-                a.Lagereinstellungen.Artikeltyp == ProductTypeEnum.ProductWithStock
-                && a.Lagerwerte.Lagerbestand > 0);
-
-            foreach (var artikel in artikelMitLagerstand)
-            {
-                Console.WriteLine(
-                    $"Artikel {artikel.Bezeichnung} der Artikelgruppe {artikel.Preisstamm?.ArtikelgruppenStamm?.Gruppentext} hat einen Bestand von {artikel.Lagerwerte.Lagerbestand}" +
-                    $" {artikel.Preisstamm.ColliVerkauf}, Verfügbarer Bestand {artikel.Lagerwerte.VerfuegbarerBestand()}");
-            }
-
-            var workflowsMitKunden = new XPQuery<CrmIncidencesUndSchritte>(companyConnection).Where(c =>
-                c.Kunde.Adresse.Staat == "D" && c.Id > 0 && c.FlagFuerLetztenEintrag == 1);
-
-            foreach (var workflow in workflowsMitKunden)
-            {
-                Console.WriteLine(
-                    $"Kunde {workflow.Kunde.Kontoname}, Fall {workflow.Id} - {workflow.Kurzbeschreibung}. {workflow.Uploads.Count()} Anhänge");
-
-                if (!workflow.Uploads.Any())
-                {
-                    continue;
-                }
-
-                foreach (var upload in workflow.Uploads)
-                {
-                    Console.WriteLine($"     Anhang: {upload.Dateiname} ({upload.UploadId})");
-                }
-            }
-
-            var aktuelleAuftrage = new XPQuery<BestelldateiKopf>(companyConnection).Where(a =>
-                a.Belegstufe == 2 && a.EinkaufsVerkaufsflag == 2);
-
-
-            Console.ReadLine();
-        }
-
-        static string GetSelectionFromConsole(List<string> optionen, string optionsName)
-        {
-            Console.WriteLine($"Mögliche Werte für {optionsName}:");
-            for (var i = 1; i <= optionen.Count; i++)
-            {
-                Console.WriteLine($"{i} - {optionen[i - 1]}");
-            }
-
-            Console.WriteLine($"Bitte gewünschten Wert für {optionsName} auswählen:");
-            var input = string.Empty;
-            var validNumber = int.TryParse(input, out var selection);
-
-            while (string.IsNullOrWhiteSpace(input) || !validNumber)
-            {
-                Console.WriteLine($"Bitte gültige Auswahl für {optionsName} eingeben:");
-                input = Console.ReadLine();
-                validNumber = int.TryParse(input, out selection);
-                if (optionen.Count <= selection)
-                {
-                    break;
-                }
-            }
-
-            return optionen[selection - 1];
-        }
-
-        static string GetParamFromConsole(string paramName, bool passwordMask = false)
-        {
-            var input = string.Empty;
-            while (string.IsNullOrWhiteSpace(input))
-            {
-                Console.WriteLine($"Bitte Wert für {paramName} eingeben:");
-                input = passwordMask ? ConsoleHelper.ReadPassword() : Console.ReadLine();
-            }
-
-            return input;
+            Console.WriteLine($"       Anhang: {upload.Dateiname} ({upload.UploadId})");
         }
     }
 
-    public static class ConsoleHelper
+    // --- Beispiel 3: Aktuelle Verkaufsauftraege ---
+    Console.WriteLine("\n--- Aktuelle Verkaufsauftraege (Top 10) ---");
+    var aktuelleAuftraege = new XPQuery<BestelldateiKopf>(mandantenVerbindung)
+        .Where(a =>
+            a.Belegstufe == 2              // 2 = Auftrag (nicht Angebot, Lieferschein etc.)
+            && a.EinkaufsVerkaufsflag == 2) // 2 = Verkauf (nicht Einkauf)
+        .Take(10);
+
+    foreach (var auftrag in aktuelleAuftraege)
     {
-        public static string ReadPassword(char mask = '*')
+        Console.WriteLine($"  Auftrag {auftrag.KontonummerLaufnummer}: {auftrag.Auftragsnummer}");
+    }
+}
+catch (Exception ex)
+{
+    Console.ForegroundColor = ConsoleColor.Red;
+    Console.WriteLine($"\nFehler: {ex.Message}");
+    Console.ResetColor();
+}
+
+Console.WriteLine("\nBeliebige Taste zum Beenden...");
+Console.ReadKey();
+
+// --- Hilfsmethoden ---
+
+/// <summary>
+/// Liest eine Benutzereingabe von der Konsole. Bei Passwoertern wird die Eingabe maskiert.
+/// </summary>
+static string LeseEingabe(string paramName, bool istPasswort = false)
+{
+    string? eingabe = null;
+    while (string.IsNullOrWhiteSpace(eingabe))
+    {
+        Console.Write($"{paramName}: ");
+        eingabe = istPasswort ? LesePasswort() : Console.ReadLine();
+    }
+    return eingabe;
+}
+
+/// <summary>
+/// Liest ein Passwort mit Maskierung (*) von der Konsole.
+/// </summary>
+static string LesePasswort()
+{
+    var passwort = new List<char>();
+    ConsoleKeyInfo taste;
+
+    while ((taste = Console.ReadKey(intercept: true)).Key != ConsoleKey.Enter)
+    {
+        if (taste.Key == ConsoleKey.Backspace && passwort.Count > 0)
         {
-            const int ENTER = 13, BACKSP = 8, CTRLBACKSP = 127;
-            int[] FILTERED = { 0, 27, 9, 10 /*, 32 space, if you care */ }; // const
-
-            var pass = new Stack<char>();
-            var chr = (char)0;
-
-            while ((chr = Console.ReadKey(true).KeyChar) != ENTER)
-            {
-                if (chr == BACKSP)
-                {
-                    if (pass.Count > 0)
-                    {
-                        Console.Write("\b \b");
-                        pass.Pop();
-                    }
-                }
-                else if (chr == CTRLBACKSP)
-                {
-                    while (pass.Count > 0)
-                    {
-                        Console.Write("\b \b");
-                        pass.Pop();
-                    }
-                }
-                else if (FILTERED.Count(x => chr == x) > 0)
-                {
-                }
-                else
-                {
-                    pass.Push(chr);
-                    Console.Write(mask);
-                }
-            }
-
-            Console.WriteLine();
-
-            return new string(pass.Reverse().ToArray());
+            passwort.RemoveAt(passwort.Count - 1);
+            Console.Write("\b \b");
         }
+        else if (!char.IsControl(taste.KeyChar))
+        {
+            passwort.Add(taste.KeyChar);
+            Console.Write('*');
+        }
+    }
+    Console.WriteLine();
+    return new string(passwort.ToArray());
+}
+
+/// <summary>
+/// Zeigt eine nummerierte Liste an und laesst den Benutzer einen Eintrag auswaehlen.
+/// </summary>
+static string WaehleAusListe(List<string> optionen, string titel)
+{
+    Console.WriteLine($"\n{titel}:");
+    for (var i = 0; i < optionen.Count; i++)
+    {
+        Console.WriteLine($"  {i + 1} - {optionen[i]}");
+    }
+
+    while (true)
+    {
+        Console.Write("Auswahl: ");
+        if (int.TryParse(Console.ReadLine(), out var auswahl)
+            && auswahl >= 1
+            && auswahl <= optionen.Count)
+        {
+            return optionen[auswahl - 1];
+        }
+        Console.WriteLine($"Bitte eine Zahl zwischen 1 und {optionen.Count} eingeben.");
     }
 }

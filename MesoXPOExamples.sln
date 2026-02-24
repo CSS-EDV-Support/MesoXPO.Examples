@@ -1,20 +1,22 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.33103.201
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleXPO", "ConsoleXPO\ConsoleXPO.csproj", "{3E7A31A8-24CF-4148-92AC-20989933D10A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MinimalWebApi", "MinimalWebApi\MinimalWebApi.csproj", "{5244F7C9-1A03-459B-A7E2-29E904E9B7CC}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleXPO", "ConsoleXPO\ConsoleXPO.csproj", "{3E7A31A8-24CF-4148-92AC-20989933D10A}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WinFormsXpoNet", "WinFormsXpoNet\WinFormsXpoNet.csproj", "{94562599-9BEF-46E1-9818-FE296AD1DF37}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XpoTestWebApi", "XpoTestWebApi\XpoTestWebApi.csproj", "{B1E2015C-A016-40C9-9A7D-2E02575D7673}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AdvancedWebApi", "AdvancedWebApi\AdvancedWebApi.csproj", "{887C102B-E55D-4295-BAE8-EE0CEDF0FC20}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Projektmappenelemente", "Projektmappenelemente", "{6613EE5F-3E40-4B4F-A652-1F6E4BEB0C9E}"
 	ProjectSection(SolutionItems) = preProject
 		README.md = README.md
 	EndProjectSection
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XpoTestWebApi", "XpoTestWebApi\XpoTestWebApi.csproj", "{B1E2015C-A016-40C9-9A7D-2E02575D7673}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NetCoreMinimalApi", "NetCoreMinimalApi\NetCoreMinimalApi.csproj", "{887C102B-E55D-4295-BAE8-EE0CEDF0FC20}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -22,6 +24,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5244F7C9-1A03-459B-A7E2-29E904E9B7CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5244F7C9-1A03-459B-A7E2-29E904E9B7CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5244F7C9-1A03-459B-A7E2-29E904E9B7CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5244F7C9-1A03-459B-A7E2-29E904E9B7CC}.Release|Any CPU.Build.0 = Release|Any CPU
 		{3E7A31A8-24CF-4148-92AC-20989933D10A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3E7A31A8-24CF-4148-92AC-20989933D10A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3E7A31A8-24CF-4148-92AC-20989933D10A}.Release|Any CPU.ActiveCfg = Release|Any CPU

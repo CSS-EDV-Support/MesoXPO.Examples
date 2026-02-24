@@ -9,8 +9,8 @@
     <Product>Demoprojekte MesoXPO</Product>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="MesoXPO-DevEx25.1" Version="2025.4.48" />
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.1" />
+    <PackageReference Include="MesoXPO-DevEx25.2" Version="2026.4.59" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.4" />
   </ItemGroup>
   <ItemGroup>
     <Compile Update="Properties\Resources.Designer.cs">

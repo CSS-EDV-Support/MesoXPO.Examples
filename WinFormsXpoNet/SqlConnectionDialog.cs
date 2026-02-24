@@ -84,6 +84,8 @@ public partial class SqlConnectionDialog : Form
         {
             ["Data Source"] = ServerName,
             ["Initial Catalog"] = DatabaseName,
+            // Der Datenbankbenutzer "meso" ist der Standard-Benutzer fuer MesoXPO-Verbindungen
+            // und wird durch den Mesonic Development Partner Vertrag bereitgestellt.
             ["User Id"] = "meso",
             ["Password"] = MesoPasswordTextBox.Text
         };
@@ -112,19 +114,15 @@ public partial class SqlConnectionDialog : Form
 
     internal static bool TestConnection(string conn)
     {
-        var success = true;
-
         try
         {
             using var connection = new SqlConnection(conn);
             connection.Open();
-            connection.Close();
+            return true;
         }
-        catch
+        catch (SqlException)
         {
-            success = false;
+            return false;
         }
-
-        return success;
     }
 }

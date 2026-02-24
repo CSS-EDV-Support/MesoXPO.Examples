@@ -4,10 +4,15 @@ using MesoXPO;
 using MesoXPO.Models;
 using MesoXPO.Models.Base;
 using MesoXPO.Models.SystemData;
+using MesoXPO.Services;
 using System.Reflection;
 
 namespace WinFormsXpoNet;
 
+/// <summary>
+/// Informationen zu einem MesoXPO-Datenobjekt (Mandantentabelle).
+/// Wird per Reflection aus den verfuegbaren CompanyBase-Klassen erzeugt.
+/// </summary>
 public record CompanyObjectInfo
 {
     public CompanyObjectInfo(CompanyBase mesoBase)
@@ -34,9 +39,9 @@ public partial class FormMain : Form
         InitializeComponent();
     }
 
-    MesoDataUnitOfWork CompanyConnection { get; set; }
+    MesoDataUnitOfWork? CompanyConnection { get; set; }
 
-    SystemUnitOfWork SystemConnection { get; set; }
+    SystemUnitOfWork? SystemConnection { get; set; }
 
     void comboCompanies_SelectedIndexChanged(object sender, EventArgs e)
     {
@@ -159,8 +164,10 @@ public partial class FormMain : Form
             // Systemverbindung
             SystemConnection = new SystemUnitOfWork(sqlConnectionDialog.ConnectionString);
 
-            // optional: statische Systemverbindung für Zugriff aus den Datenobjekten (z.B. auf Archivdokumente, Eigenschaften etc., die nicht in derselben Datenbank und daher nicht im selben DataLayer liegen)
-            SystemUnitOfWork.SessionSystem = SystemConnection;
+            // Optional: Systemdatenbank-Service fuer Zugriff aus XPO-Datenobjekten bereitstellen
+            // (z.B. auf Archivdokumente, Eigenschaften etc., die in der Systemdatenbank liegen).
+            // In DI-Szenarien (ASP.NET Core) wird dies automatisch durch AddMesoXPOServices() erledigt.
+            SystemDatabaseServiceProvider.SetStaticService(new SystemDatabaseService(SystemConnection));
 
             var companies = new XPQuery<Datenbankverbindung>(SystemConnection)
                 .Select(d => d.Mandant);
