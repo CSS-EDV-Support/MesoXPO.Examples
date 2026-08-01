@@ -38,9 +38,21 @@ jobs:
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
         run: |
+          # --squash nicht hartkodieren: manche Repos erlauben nur Rebase, dort
+          # scheitert der Merge sonst mit "Squash merges are not allowed".
+          METHOD=$(gh api "repos/$REPO" --jq '
+            if .allow_squash_merge then "--squash"
+            elif .allow_merge_commit then "--merge"
+            elif .allow_rebase_merge then "--rebase"
+            else "" end')
+          if [ -z "$METHOD" ]; then
+            echo "::error::Repository erlaubt keine Merge-Methode"
+            exit 1
+          fi
           gh pr review --approve "$PR_URL"
-          gh pr merge --squash --auto "$PR_URL"
+          gh pr merge "$METHOD" --auto "$PR_URL"
 
       - name: Alles andere nur markieren
         if: >-
