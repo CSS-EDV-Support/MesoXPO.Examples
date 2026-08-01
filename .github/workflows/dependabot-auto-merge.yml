@@ -1,0 +1,55 @@
+# Erzeugt von Rollout-Dependabot.ps1
+#
+# Patch- und Minor-Updates von Dependabot werden automatisch approved und via
+# Auto-Merge gemergt, sobald alle erforderlichen Checks gruen sind.
+# Major-Updates bleiben bewusst liegen und muessen manuell geprueft werden.
+#
+# Voraussetzungen:
+#   - Repo-Einstellung "Allow auto-merge" ist aktiv
+#     (gh api -X PATCH repos/OWNER/REPO -F allow_auto_merge=true)
+#   - Branch Protection mit erforderlichen Status-Checks, sonst mergt das hier
+#     auch einen roten Build.
+name: Dependabot auto-merge
+
+on: pull_request_target
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dependabot-Metadaten lesen
+        id: meta
+        uses: dependabot/fetch-metadata@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Bewusst positiv formuliert: nur explizit minor/patch wird gemergt.
+      # Ein "!= semver-major" waere gefaehrlich, weil update-type bei manchen
+      # Oekosystemen leer bleiben kann - der Vergleich waere dann true.
+      - name: Approve + Auto-Merge (nur Patch/Minor)
+        if: >-
+          steps.meta.outputs.update-type == 'version-update:semver-patch' ||
+          steps.meta.outputs.update-type == 'version-update:semver-minor'
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr review --approve "$PR_URL"
+          gh pr merge --squash --auto "$PR_URL"
+
+      - name: Alles andere nur markieren
+        if: >-
+          steps.meta.outputs.update-type != 'version-update:semver-patch' &&
+          steps.meta.outputs.update-type != 'version-update:semver-minor'
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UPDATE_TYPE: ${{ steps.meta.outputs.update-type }}
+        run: |
+          gh pr comment "$PR_URL" --body \
+            "Kein Auto-Merge (update-type: \`${UPDATE_TYPE:-unbekannt}\`) - bitte manuell pruefen."
