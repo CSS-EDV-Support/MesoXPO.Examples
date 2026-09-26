@@ -9,6 +9,14 @@
 #     (gh api -X PATCH repos/OWNER/REPO -F allow_auto_merge=true)
 #   - Branch Protection mit erforderlichen Status-Checks, sonst mergt das hier
 #     auch einen roten Build.
+#   - GitHub App "css-dependabot-auto-merge" (Contents, Pull requests, Workflows:
+#     read/write) mit den Secrets AUTOMERGE_APP_CLIENT_ID + AUTOMERGE_APP_PRIVATE_KEY.
+#     Merges mit dem GITHUB_TOKEN loesen keine Folge-Workflows aus - ohne App
+#     laufen nach dem Merge weder CI noch Image-Builds auf main. Die Secrets
+#     muessen im Actions- UND im Dependabot-Store der Org liegen: Von Dependabot
+#     ausgeloeste Laeufe sehen nur Dependabot-Secrets, per "Update branch"
+#     ausgeloeste nur Actions-Secrets. Fehlen sie, faellt der Workflow auf den
+#     GITHUB_TOKEN zurueck (Merge klappt, Folge-Workflows bleiben aus).
 name: Dependabot auto-merge
 
 on: pull_request_target
@@ -21,12 +29,26 @@ jobs:
   auto-merge:
     if: github.event.pull_request.user.login == 'dependabot[bot]'
     runs-on: ubuntu-latest
+    env:
+      HAS_APP: ${{ secrets.AUTOMERGE_APP_PRIVATE_KEY != '' }}
     steps:
       - name: Dependabot-Metadaten lesen
         id: meta
         uses: dependabot/fetch-metadata@v3
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: App-Token erzeugen
+        id: app-token
+        if: env.HAS_APP == 'true'
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ secrets.AUTOMERGE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.AUTOMERGE_APP_PRIVATE_KEY }}
+
+      - name: Hinweis bei fehlender App
+        if: env.HAS_APP != 'true'
+        run: echo "::warning::AUTOMERGE_APP_* fehlt - Merge per GITHUB_TOKEN, CI und Image-Builds auf main starten danach nicht."
 
       # Bewusst positiv formuliert: nur explizit minor/patch wird gemergt.
       # Ein "!= semver-major" waere gefaehrlich, weil update-type bei manchen
@@ -37,7 +59,7 @@ jobs:
           steps.meta.outputs.update-type == 'version-update:semver-minor'
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
         run: |
           # --squash nicht hartkodieren: manche Repos erlauben nur Rebase, dort
@@ -52,7 +74,19 @@ jobs:
             exit 1
           fi
           gh pr review --approve "$PR_URL"
-          gh pr merge "$METHOD" --auto "$PR_URL"
+
+          # --auto wartet auf *erforderliche* Checks. Ohne Branch Protection
+          # gibt es keine, und GitHub lehnt das Aktivieren ab. Dann bleibt nur
+          # sofort mergen - ohne Check-Gate, deshalb die Warnung.
+          if ! gh pr merge "$METHOD" --auto "$PR_URL" 2>err.txt; then
+            if grep -q 'Protected branch rules not configured' err.txt; then
+              echo "::warning::Keine Branch Protection - es wird ohne Check-Gate gemergt"
+              gh pr merge "$METHOD" "$PR_URL"
+            else
+              cat err.txt >&2
+              exit 1
+            fi
+          fi
 
       - name: Alles andere nur markieren
         if: >-
